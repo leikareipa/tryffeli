@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
+import abc
 import math
+import random
+from PyQt5.QtGui import QImage, QColor
 
-class Color:
-    """A 3-component (RGB) color. Values are expected in the range [0,1]."""
-    
-    def __init__(self, red = 0, green = 0, blue = 0):
-        self.red = red
-        self.green = green
-        self.blue = blue
+random.seed(1)
 
 class Matrix:
     """A 4-component (XYZW) matrix."""
@@ -186,17 +183,117 @@ class Material:
         lambertian = 2
         reflective = 3
 
-    def __init__(self, materialType):
-        self.type = materialType
+    def __init__(self, type = Type.lambertian):
+        self.type = type
 
 class GeometricPrimitive:
     """A geometric primitive (e.g. triangle or sphere) capable of being rendered."""
-    
-    def __init__(self):
-        self.material = Material(Material.Type.lambertian)
     
     def intersection_distance(self, ray):
         return 5
 
 class Sphere(GeometricPrimitive):
-    pass
+    def __init__(self, position = Vector(), radius = 1, material = Material()):
+        self.radius = radius
+        self.position = position
+        self.material = material
+
+class Color:
+    """A 3-component (RGB) color. Values are expected in the range [0,1]."""
+    
+    def __init__(self, red = 1, green = 0, blue = 1):
+        self.red = red
+        self.green = green
+        self.blue = blue
+
+class RenderSurface:
+    """A pixel buffer for rendering into."""
+
+    def __init__(self, width = 640, height = 480, clearColor = Color()):
+        self.width = width
+        self.height = height
+        self.pixels = ([clearColor] * width * height)
+
+    def put_pixel(self, x = 0, y = 0, color = Color()):
+        self.pixels[x + y * self.width] = color
+
+    def pixel_at(self, x = 0, y = 0):
+        return self.pixels[x + y * self.width]
+
+    def as_qimage(self):
+        """Returns the surface's pixels as a Qt QImage."""
+
+        image = QImage(self.width, self.height, QImage.Format_RGB32)
+
+        for y in range(0, self.height):
+            for x in range(0, self.width):
+                color = self.pixel_at(x, y)
+                image.setPixelColor(x, y, QColor((color.red * 255),
+                                                 (color.green * 255),
+                                                 (color.blue * 255)))
+
+        return image
+
+class Camera(metaclass=abc.ABCMeta):
+    """Base camera class."""
+
+    def __init__(self, position = Vector(), direction = Vector(), film = RenderSurface()):
+        self.position = position
+        self.direction = direction
+        self.film = film
+        self.antialiasing = False
+        self.fov = 20
+
+    @abc.abstractmethod
+    def ray_for_pixel(self, x, y):
+        """Creates and returns a ray shot from the camera's position toward a
+        direction corresponding to the film's XY pixel coordinates."""
+        pass
+
+class AntialiasingCamera(Camera):
+    """A camera that renders an antialiased image."""
+
+    def __init__(self, position = Vector(), direction = Vector(), film = RenderSurface()):
+        super().__init__(position, direction, film)
+
+    def ray_for_pixel(self, x, y):
+        aspectRatio = (self.film.width / self.film.height);
+
+        # Aim the ray toward the given pixel, and perturb its direction slightly
+        # to create an antialiasing effect. This algo was adapted from one posted
+        # by friedlinguini on the now-deceased ompf.org form.
+        r1 = random.random()
+        r2 = random.random()
+        rad = (0.49 * math.sqrt(-math.log(1 - r1)))
+        angle = (2 * math.pi * r2)
+        rayDirection = Vector(((2 * ((x + 0.5 + rad * math.cos(angle)) / self.film.width) - 1) * math.tan(self.fov * math.pi / 180) * aspectRatio),
+                               (1 - 2 * ((y + 0.5 + rad * math.sin(angle)) / self.film.height)) * math.tan(self.fov * math.pi / 180),
+                               -1)
+
+        rayDirection.normalize()
+
+        # Point the ray in the camera's direction by transforming it by the camera's
+        # axis angle. Adapted from https://stackoverflow.com/a/42422624.
+        axis = Vector(0, 0, 1)
+        angle = 0
+        cross = axis.cross(rayDirection)
+        dot = axis.dot(rayDirection)
+        cos = math.cos(angle)
+        sin = math.sin(angle)
+        rayDirection.x = ((rayDirection.x * cos) + (cross.x * sin) + (axis.x * dot) * (1 - cos))
+        rayDirection.y = ((rayDirection.y * cos) + (cross.y * sin) + (axis.y * dot) * (1 - cos))
+        rayDirection.z = ((rayDirection.z * cos) + (cross.z * sin) + (axis.z * dot) * (1 - cos))
+
+        return Ray(position = self.position, direction = rayDirection)
+
+
+sphere = Sphere(radius = 100,
+                position = Vector(0, 0, 100),
+                material = Material(type = Material.Type.lambertian))
+
+camera = AntialiasingCamera(position = Vector(0, 0, 0),
+                            direction = Vector(0, 0, 1),
+                            film = RenderSurface(640, 480, clearColor = Color(0, 0, 0)))
+
+ray = camera.ray_for_pixel(0, 0)
+print(ray.direction.x, ray.direction.y, ray.direction.z)
