@@ -3,6 +3,7 @@
 import abc
 import math
 import random
+import os
 from PyQt5.QtGui import QImage, QColor
 
 random.seed(1)
@@ -117,6 +118,16 @@ class Vector:
         self.y = y
         self.z = z
 
+    def __sub__(self, other):
+        if isinstance(other, Vector):
+            return Vector((self.x - other.x),
+                          (self.y - other.y),
+                          (self.z - other.z))
+        else: # Assumed int or float.
+            return Vector((self.x - other),
+                          (self.y - other),
+                          (self.z - other))
+
     def __mul__(self, other):
         if isinstance(other, Vector):
             return Vector((self.x * other.x),
@@ -186,17 +197,56 @@ class Material:
     def __init__(self, type = Type.lambertian):
         self.type = type
 
-class GeometricPrimitive:
+class GeometricPrimitive(metaclass=abc.ABCMeta):
     """A geometric primitive (e.g. triangle or sphere) capable of being rendered."""
     
+    @abc.abstractmethod
     def intersection_distance(self, ray):
-        return 5
+        """Ray-primitive intersection.
+        
+        Returns math.inf if the ray misses this primitive; a positive value if the
+        ray hits the primitive's front face; and a negative value if the ray hits
+        the primitive's back face. The value's magnitude gives the distance from
+        the ray's origin to the intersection point along the ray's direction.
+        """
+        
+        pass
 
 class Sphere(GeometricPrimitive):
     def __init__(self, position = Vector(), radius = 1, material = Material()):
         self.radius = radius
         self.position = position
         self.material = material
+
+    def intersection_distance(self, ray):
+        """Ray-sphere intersection.
+
+        A positive value means the ray hit the sphere from outside of the sphere;
+        a negative value that the ray hit the sphere from inside the sphere.
+        
+        Adapted with superficial changes from an implementation by Jacco Bikker
+        (https://web.archive.org/web/20080509075746/http://www.devmaster.net/articles/raytracing_series/part2.php).
+        """
+
+        v = (sphere.position - ray.position)
+        b = -v.dot(ray.direction)
+        det = ((b ** 2) - v.dot(v) + (sphere.radius ** 2))
+
+        if det > 0:
+            i1 = 0
+            i2 = 0
+
+            det = math.sqrt(det)
+            i1 = (b - det)
+            i2 = (b + det)
+
+            if i2 > 0:
+                if i1 < 0:
+                    return -i2
+                else:
+                    return i1
+
+        return math.inf
 
 class Color:
     """A 3-component (RGB) color. Values are expected in the range [0,1]."""
@@ -271,29 +321,43 @@ class AntialiasingCamera(Camera):
                                -1)
 
         rayDirection.normalize()
+        return Ray(position = self.position, direction = rayDirection)
 
-        # Point the ray in the camera's direction by transforming it by the camera's
-        # axis angle. Adapted from https://stackoverflow.com/a/42422624.
-        axis = Vector(0, 0, 1)
-        angle = 0
-        cross = axis.cross(rayDirection)
-        dot = axis.dot(rayDirection)
-        cos = math.cos(angle)
-        sin = math.sin(angle)
-        rayDirection.x = ((rayDirection.x * cos) + (cross.x * sin) + (axis.x * dot) * (1 - cos))
-        rayDirection.y = ((rayDirection.y * cos) + (cross.y * sin) + (axis.y * dot) * (1 - cos))
-        rayDirection.z = ((rayDirection.z * cos) + (cross.z * sin) + (axis.z * dot) * (1 - cos))
+class SimpleCamera(Camera):
+    """A basic camera."""
 
+    def __init__(self, position = Vector(), direction = Vector(), film = RenderSurface()):
+        super().__init__(position, direction, film)
+
+    def ray_for_pixel(self, x, y):
+        aspectRatio = (self.film.width / self.film.height);
+
+        # Aim the ray toward the given pixel.
+        a = math.tan(self.fov * math.pi / 180);
+        rayDirection = Vector(((2 * ((x + 0.5) / self.film.width) - 1) * a * aspectRatio),
+                                ((1 - (2 * ((y + 0.5) / self.film.height))) * a),
+                                -1)
+
+        rayDirection.normalize()
         return Ray(position = self.position, direction = rayDirection)
 
 
-sphere = Sphere(radius = 100,
-                position = Vector(0, 0, 100),
+
+
+sphere = Sphere(radius = 50,
+                position = Vector(0, 0, 200),
                 material = Material(type = Material.Type.lambertian))
 
-camera = AntialiasingCamera(position = Vector(0, 0, 0),
-                            direction = Vector(0, 0, 1),
-                            film = RenderSurface(640, 480, clearColor = Color(0, 0, 0)))
+camera = SimpleCamera(position = Vector(0, 0, 0),
+                      direction = Vector(0, 0, 1),
+                      film = RenderSurface(640, 480, clearColor = Color(0, 0, 0)))
 
-ray = camera.ray_for_pixel(0, 0)
-print(ray.direction.x, ray.direction.y, ray.direction.z)
+# Cast a ray into each pixel on the film.
+for y in range(0, camera.film.height):
+    for x in range(0, camera.film.width):
+        ray = camera.ray_for_pixel(x, y)
+        if sphere.intersection_distance(ray) != math.inf:
+            camera.film.put_pixel(x, y, Color(1, 1, 1))
+
+camera.film.as_qimage().save("test.png")
+os.system("display test.png")
