@@ -18,6 +18,16 @@ class Vector:
                           (self.y - other),
                           (self.z - other))
 
+    def __add__(self, other):
+        if isinstance(other, Vector):
+            return Vector((self.x + other.x),
+                          (self.y + other.y),
+                          (self.z + other.z))
+        else: # Assumed int or float.
+            return Vector((self.x + other),
+                          (self.y + other),
+                          (self.z + other))
+
     def __mul__(self, other):
         if isinstance(other, Vector):
             return Vector((self.x * other.x),

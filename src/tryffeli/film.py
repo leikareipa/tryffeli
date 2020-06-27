@@ -3,10 +3,10 @@ from PyQt5.QtGui import QImage, QColor
 class RenderSurface:
     """A pixel buffer for rendering into."""
 
-    def __init__(self, width, height, clearColor):
+    def __init__(self, width, height, backgroundColor):
         self.width = width
         self.height = height
-        self.pixels = ([clearColor] * width * height)
+        self.pixels = ([backgroundColor] * width * height)
 
     def put_pixel(self, x, y, color):
         self.pixels[x + y * self.width] = color

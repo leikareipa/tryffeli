@@ -1,17 +1,20 @@
 import math
 import abc
+from .ray import RayIntersectionInfo
+from .vector import Vector
 
 class GeometricPrimitive(metaclass=abc.ABCMeta):
     """A geometric primitive (e.g. triangle or sphere) capable of being rendered."""
     
     @abc.abstractmethod
-    def intersection_distance(self, ray):
+    def intersection_with(self, ray):
         """Ray-primitive intersection.
         
-        Returns math.inf if the ray misses this primitive; a positive value if the
-        ray hits the primitive's front face; and a negative value if the ray hits
-        the primitive's back face. The value's magnitude gives the distance from
-        the ray's origin to the intersection point along the ray's direction.
+        Returns either None if the ray misses this primitive, or a RayIntersectionInfo
+        instance if the ray intersects this primitive.
+        
+        The 'distance' property of the RayIntersectionInfo instance will be positive
+        if the ray hits the primitive's front face and negative if the back face.
         """
         
         pass
@@ -22,7 +25,7 @@ class Sphere(GeometricPrimitive):
         self.position = position
         self.material = material
 
-    def intersection_distance(self, ray):
+    def intersection_with(self, ray):
         """Ray-sphere intersection.
 
         A positive value means the ray hit the sphere from outside of the sphere;
@@ -32,11 +35,15 @@ class Sphere(GeometricPrimitive):
         (https://web.archive.org/web/20080509075746/http://www.devmaster.net/articles/raytracing_series/part2.php).
         """
 
+        intersection = RayIntersectionInfo(ray, self)
+
         v = (self.position - ray.position)
         b = -v.dot(ray.direction)
         det = ((b ** 2) - v.dot(v) + (self.radius ** 2))
 
-        if det > 0:
+        if det <= 0:
+            return None
+        else:
             i1 = 0
             i2 = 0
 
@@ -46,8 +53,13 @@ class Sphere(GeometricPrimitive):
 
             if i2 > 0:
                 if i1 < 0:
-                    return -i2
+                    intersection.distance = -i2
                 else:
-                    return i1
+                    intersection.distance = i1
 
-        return math.inf
+            intersection.position = (ray.position + (ray.direction * intersection.distance))
+
+            intersection.normal = (intersection.position - self.position)
+            intersection.normal.normalize()
+
+        return intersection
