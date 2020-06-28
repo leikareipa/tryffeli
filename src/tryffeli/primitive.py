@@ -57,9 +57,11 @@ class Sphere(GeometricPrimitive):
                 else:
                     intersection.distance = i1
 
-            intersection.position = (ray.position + (ray.direction * intersection.distance))
+                intersection.position = (ray.position + (ray.direction * intersection.distance))
 
-            intersection.normal = (intersection.position - self.position)
-            intersection.normal.normalize()
+                intersection.normal = (intersection.position - self.position)
+                intersection.normal.normalize()
+            else:
+                return None
 
         return intersection

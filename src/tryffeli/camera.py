@@ -14,7 +14,7 @@ class Camera(metaclass=abc.ABCMeta):
         self.direction = direction
         self.film = film
         self.antialiasing = False
-        self.fov = 80
+        self.fov = 40
 
     @abc.abstractmethod
     def ray_for_pixel(self, x, y):
