@@ -4,4 +4,3 @@ class Scene:
     def __init__(self):
         self.lights = []
         self.primitives = []
-        self.camera = None

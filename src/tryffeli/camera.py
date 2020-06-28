@@ -2,6 +2,7 @@ import abc
 import random
 import math
 from .vector import Vector
+from .color import Color
 from .ray import Ray
 
 random.seed(1)
@@ -14,13 +15,31 @@ class Camera(metaclass=abc.ABCMeta):
         self.direction = direction
         self.film = film
         self.antialiasing = False
-        self.fov = 40
+        self.fov = 15
 
     @abc.abstractmethod
     def ray_for_pixel(self, x, y):
         """Creates and returns a ray shot from the camera's position toward a
         direction corresponding to the film's XY pixel coordinates."""
         pass
+
+    def shoot(self, scene):
+        """Exposes the camera's film to the scene. In other words, renders the
+        scene from the camera's point of view."""
+
+        for y in range(0, self.film.height):
+            for x in range(0, self.film.width):
+                for primitive in scene.primitives:
+                    ray = self.ray_for_pixel(x, y)
+                    intersection = primitive.intersection_with(ray)
+                    if intersection != None:
+                        shade = max(0, min(1, (1 - (intersection.distance / 300))))
+                        self.film.put_pixel(x, y, Color(shade, shade, shade))
+            if ((y % 10) == 0):
+                print("Exposing the film: %d%%" % (y / self.film.height * 100), end = "\r")
+
+        # Clear the previous line in the terminal.
+        print("%s", (" " * 50), end = "\r")
 
 class AntialiasingCamera(Camera):
     """A camera that renders an antialiased image."""
