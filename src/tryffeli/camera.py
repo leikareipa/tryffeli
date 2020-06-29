@@ -29,14 +29,15 @@ class Camera(metaclass=abc.ABCMeta):
 
         for y in range(0, self.film.height):
             for x in range(0, self.film.width):
-                for primitive in scene.primitives:
-                    ray = self.ray_for_pixel(x, y)
-                    intersection = primitive.intersection_with(ray)
-                    if intersection != None:
-                        shade = max(0, min(1, (1 - (intersection.distance / 300))))
-                        self.film.put_pixel(x, y, Color(shade, shade, shade))
+                ray = self.ray_for_pixel(x, y)
+                intersections = ray.shoot(scene)
+                if intersections:
+                    intersections.sort(key = lambda intersection: intersection.distance)
+                    nearestIntersection = intersections[0]
+                    self.film.put_pixel(x, y, Color(1, 1, 1))
+
             if ((y % 10) == 0):
-                print("Exposing the film: %d%%" % (y / self.film.height * 100), end = "\r")
+                print("Exposing film: %d%%" % (y / self.film.height * 100), end = "\r")
 
         # Clear the previous line in the terminal.
         print("%s", (" " * 50), end = "\r")

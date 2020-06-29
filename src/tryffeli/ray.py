@@ -3,6 +3,22 @@ class Ray:
         self.position = position
         self.direction = direction
 
+    def shoot(self, scene):
+        """Casts the ray into the given scene. Returns an unordered list of the
+        ray-primitive intersections that occur."""
+
+        # An IntersectionInfo object for each ray-primitive intersection that
+        # occurs in the scene.
+        intersections = []
+
+        for primitive in scene.primitives:
+            intersection = primitive.intersection_with(self)
+
+            if intersection != None:
+                intersections.append(intersection)
+
+        return intersections
+
 class RayIntersectionInfo:
     """Metadata about an intersection between a ray and a primitive."""
 
