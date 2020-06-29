@@ -9,10 +9,7 @@ from src.tryffeli.film import RenderSurface
 from src.tryffeli.material import Material
 from src.tryffeli.color import Color
 from src.tryffeli.scene import Scene
-
-camera = SimpleCamera(position = Vector(0, 0, 0),
-                      direction = Vector(0, 0, -1),
-                      film = RenderSurface(640, 360, backgroundColor = Color(0, 0, 0)))
+from src.tryffeli.light import PointLight
 
 scene = Scene()
 
@@ -25,9 +22,19 @@ scene.primitives = [
            material = Material(type = Material.Type.lambertian))
 ]
 
+scene.lights = [
+    PointLight(position = Vector(5, 50, 0),
+               intensity = 1.7,
+               parentScene = scene),
+]
+
+camera = SimpleCamera(position = Vector(0, 0, 0),
+                      direction = Vector(0, 0, 1),
+                      film = RenderSurface(640, 360, backgroundColor = Color(0, 0, 0)))
+
 camera.shoot(scene)
 
-print("Exporting as a PNG...")
+print("Exporting to PNG...")
 camera.film.as_qimage().save("./misc/tryffeli.png")
 
 os.system("display ./misc/tryffeli.png")

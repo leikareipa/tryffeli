@@ -30,7 +30,7 @@ class RayIntersectionInfo:
         self.distance = None
 
         # Location in world XYZ coordinates of where this intersection occurs.
-        self.position = None
+        self.point = None
 
         # The primitive's normal at the interscection point.
         self.normal = None

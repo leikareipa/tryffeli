@@ -37,16 +37,13 @@ class Sphere(GeometricPrimitive):
 
         intersection = RayIntersectionInfo(ray, self)
 
-        v = (self.position - ray.position)
+        v = (ray.position - self.position)
         b = -v.dot(ray.direction)
-        det = ((b ** 2) - v.dot(v) + (self.radius ** 2))
+        det = ((b * b) - v.dot(v) + (self.radius ** 2))
 
         if det <= 0:
             return None
         else:
-            i1 = 0
-            i2 = 0
-
             det = math.sqrt(det)
             i1 = (b - det)
             i2 = (b + det)
@@ -57,10 +54,8 @@ class Sphere(GeometricPrimitive):
                 else:
                     intersection.distance = i1
 
-                intersection.position = (ray.position + (ray.direction * intersection.distance))
-
-                intersection.normal = (intersection.position - self.position)
-                intersection.normal.normalize()
+                intersection.point = (ray.position + (ray.direction * intersection.distance))
+                intersection.normal = (intersection.point - self.position).normalized()
             else:
                 return None
 

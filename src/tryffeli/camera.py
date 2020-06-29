@@ -28,13 +28,31 @@ class Camera(metaclass=abc.ABCMeta):
         scene from the camera's point of view."""
 
         for y in range(0, self.film.height):
+
             for x in range(0, self.film.width):
+
                 ray = self.ray_for_pixel(x, y)
                 intersections = ray.shoot(scene)
+
                 if intersections:
+
                     intersections.sort(key = lambda intersection: intersection.distance)
-                    nearestIntersection = intersections[0]
-                    self.film.put_pixel(x, y, Color(1, 1, 1))
+                    nearest = intersections[0]
+
+                    totalIncidentLight = 0
+
+                    for light in scene.lights:
+
+                        lightDirection = (light.position - nearest.point).normalized()
+                        lightDistance = nearest.point.distance_to(light.position)
+
+                        shade = max(0, min(1, nearest.normal.dot(lightDirection)))
+                        falloff = max(0, min(1, (1 - (lightDistance / 400))))
+                        incidentLight = (light.intensity * shade * falloff)
+
+                        totalIncidentLight = max(0, min(1, (totalIncidentLight + incidentLight)))
+
+                    self.film.put_pixel(x, y, Color(totalIncidentLight, totalIncidentLight, totalIncidentLight))
 
             if ((y % 10) == 0):
                 print("Exposing film: %d%%" % (y / self.film.height * 100), end = "\r")
@@ -60,9 +78,11 @@ class AntialiasingCamera(Camera):
         angle = (2 * math.pi * r2)
         rayDirection = Vector(((2 * ((x + 0.5 + rad * math.cos(angle)) / self.film.width) - 1) * math.tan(self.fov * math.pi / 180) * aspectRatio),
                               (1 - 2 * ((y + 0.5 + rad * math.sin(angle)) / self.film.height)) * math.tan(self.fov * math.pi / 180),
-                              self.direction.z)
+                              1)
 
         rayDirection.normalize()
+
+        ### TODO: Transform the ray direction by the camera's viewing direction. 
 
         return Ray(position = self.position, direction = rayDirection)
 
@@ -79,8 +99,10 @@ class SimpleCamera(Camera):
         a = math.tan(self.fov * math.pi / 180)
         rayDirection = Vector(((2 * ((x + 0.5) / self.film.width) - 1) * a * aspectRatio),
                                ((1 - (2 * ((y + 0.5) / self.film.height))) * a),
-                               self.direction.z)
+                               1)
 
         rayDirection.normalize()
+
+        ### TODO: Transform the ray direction by the camera's viewing direction.
 
         return Ray(position = self.position, direction = rayDirection)
