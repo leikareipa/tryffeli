@@ -42,6 +42,8 @@ class Camera(metaclass=abc.ABCMeta):
                     totalIncidentLight = 0
 
                     for light in scene.lights:
+                        if not light.can_see(nearest):
+                            continue
 
                         lightDirection = (light.position - nearest.point).normalized()
                         lightDistance = nearest.point.distance_to(light.position)

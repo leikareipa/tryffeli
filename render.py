@@ -19,11 +19,14 @@ scene.primitives = [
            material = Material(type = Material.Type.lambertian)),
     Sphere(radius = 10,
            position = Vector(50, 0, 200),
-           material = Material(type = Material.Type.lambertian))
+           material = Material(type = Material.Type.lambertian)),
+    Sphere(radius = 9960,
+           position = Vector(0, -10000, 200),
+           material = Material(type = Material.Type.lambertian)),
 ]
 
 scene.lights = [
-    PointLight(position = Vector(5, 50, 0),
+    PointLight(position = Vector(25, 75, 0),
                intensity = 1.7,
                parentScene = scene),
 ]
