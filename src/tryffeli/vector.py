@@ -60,6 +60,8 @@ class Vector:
         self.z = _z
 
     def normalize(self):
+        """In-place normalization of this vector."""
+
         sn = math.sqrt((self.x * self.x) +
                        (self.y * self.y) +
                        (self.z * self.z))
@@ -70,6 +72,15 @@ class Vector:
         self.y /= sn
         self.z /= sn
 
+    def normalized(self):
+        """Returns a normalized copy of this vector, without modifying the
+        original vector."""
+
+        normalizedVector = Vector(self.x, self.y, self.z)
+        normalizedVector.normalize()
+
+        return normalizedVector
+
     def dot(self, other):
         return ((self.x * other.x) +
                 (self.y * other.y) +
@@ -79,3 +90,9 @@ class Vector:
         return Vector(((self.y * other.z) - (self.z * other.y)),
                       ((self.z * other.x) - (self.x * other.z)),
                       ((self.x * other.y) - (self.y * other.x)))
+
+
+    def distance_to(self, other):
+        return math.sqrt(((self.x - other.x) * (self.x - other.x)) +
+                         ((self.y - other.y) * (self.y - other.y)) +
+                         ((self.z - other.z) * (self.z - other.z)))
