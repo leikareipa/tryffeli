@@ -5,3 +5,13 @@ class Color:
         self.red = red
         self.green = green
         self.blue = blue
+
+    def __iadd__(self, other):
+        self.red += other.red
+        self.green += other.green
+        self.blue += other.blue
+
+        return self
+
+    def __add__(self, other):
+        self += other
